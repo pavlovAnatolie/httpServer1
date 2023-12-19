@@ -111,10 +111,10 @@ public class App
                 out.write(buf, 0, n);
             }
             input.close();
-        }else if(val == 401)
+        }else if(val == 404)
         sendErr(out, f);
         else
-        redirect(out, f.getName());
+        redirect(out, f.getName()+"/");
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
