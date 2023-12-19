@@ -1,7 +1,11 @@
 package com.example;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
@@ -21,24 +25,37 @@ public class App
                 Socket s = server.accept();
 
                 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-                PrintWriter out = new PrintWriter(s.getOutputStream());
+                DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
                 String linkSearch= in.readLine();
-                System.out.println(linkSearch);
                 String[] linkFinder = linkSearch.split(" ");
-                String link = "."+linkFinder[1];
-
+                String link = linkFinder[1];
+                link = "prova"+link;
                 
 
-                do {
-                   String str= in.readLine();
-                   System.out.println(str);
-                   if (str == null || str.equals("")) {
-                    break;
-                   }
-                } while (true);
+                /*File f = new File ("prova"+link);
+                if(!f.getName().endsWith("/")){
+                    if(f.exists()){
+                        sendFile(out,f);
+                    }else{
+                        redirect(out, link+"/");
+                    }
+                }else{
+                    File temp = new File (f.getName()+"index.html");
+                    if(temp.exists())
+                    sendFile(out, f);
+                    else
+                    sendErr(out, f);
+                }*/
 
-                sendFile(out, link);
+                if(link.endsWith("/")){
+                    link = link+"index.html";
+                    sendFile(out, new File(link));
+                }else{
+                    sendFile(out,new File(link));
+                }
+                        
+            //sendFile(out, f);
 
                 out.flush();
                 s.close();
@@ -50,28 +67,70 @@ public class App
         }
     }
 
+    private static void redirect(DataOutputStream out, String s){
+        try{
+            out.writeBytes("HTTP/1.1 301 \n");
+            out.writeBytes("Location:"+s+"\n");
+        }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }  
+       
+    }
 
-    private static void sendFile(PrintWriter out, String file){
+    private static void sendErr(DataOutputStream out, File f){
+        try{     
+             out.writeBytes("HTTP/1.1 404 ERROR \n");
+             out.writeBytes("Content-Length: "+ f.length()+"\n" );
+             out.writeBytes("Content-Type: text/plain; charset=utf-8 \n");
+             out.writeBytes("\n");
+            
+            }catch (Exception e) {
+            System.out.println(e.getMessage());
+        }  
+    }
+
+
+    private static void sendFile(DataOutputStream out, File f){
         try {
-            File f = new File(file);
-            Scanner myObj = new Scanner(f);
+            out.writeBytes("HTTP/1.1 200 OK \n");
+            out.writeBytes("Content-Length: "+ f.length()+"\n" );
+            out.writeBytes("Server: Java HTTP Server from Pavlov: 1.0"+ "\n");
+            out.writeBytes("Date: "+ new Date() +"\n" );
+            out.writeBytes("Content-Type: " + getContentType(f)+"; charset=utf-8 \n");
+            out.writeBytes("\n");
 
-            out.println("HTTP/1.1 200 OK");
-            out.println("Content-Length: "+ f.length());
-            out.println("Server: Java HTTP Server from Pavlov: 1.0");
-            out.println("Date: "+ new Date());
-            out.println("Content-Type: text/html; charset=utf-8");
-            out.println();
-
-            while(myObj.hasNextLine()){
-                out.println(myObj.nextLine());
+            InputStream input = new FileInputStream(f);
+            byte buf[] = new byte[8192];
+            int n;
+            while ((n = input.read(buf)) != -1){
+                out.write(buf, 0, n);
             }
-
+            input.close();
 
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
         
+
+    }
+
+    private static String getContentType(File f){
+        String s[] = f.getName().split("\\.");
+        String ext = s[s.length-1];
+        switch(ext){
+            case "html":
+            case "htm":
+                return "text/html";
+            case "png":
+                return "image/png";
+
+            case "css":
+                return "text/html";
+            
+            default:
+                return"";
+        }
+
 
     }
 }
