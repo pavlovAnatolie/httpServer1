@@ -50,9 +50,10 @@ public class App
 
                 if(link.endsWith("/")){
                     link = link+"index.html";
-                    sendFile(out, new File(link));
+                    sendFile(out, new File(link),404);
                 }else{
-                    sendFile(out,new File(link));
+                    sendFile(out,new File(link),301);
+                    //bisogna aggiungere il redirect in questo 
                 }
                         
             //sendFile(out, f);
@@ -90,8 +91,12 @@ public class App
     }
 
 
-    private static void sendFile(DataOutputStream out, File f){
+    private static void sendFile(DataOutputStream out, File f,int val){
         try {
+
+            if (f.exists()) {
+                
+            
             out.writeBytes("HTTP/1.1 200 OK \n");
             out.writeBytes("Content-Length: "+ f.length()+"\n" );
             out.writeBytes("Server: Java HTTP Server from Pavlov: 1.0"+ "\n");
@@ -106,7 +111,10 @@ public class App
                 out.write(buf, 0, n);
             }
             input.close();
-
+        }else if(val == 401)
+        sendErr(out, f);
+        else
+        redirect(out, f.getName());
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }
